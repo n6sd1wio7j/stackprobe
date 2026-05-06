@@ -8,13 +8,21 @@ import (
 )
 
 const (
-	svc      = "api"
+	svc       = "api"
 	threshold = 3
 	cooldown  = 100 * time.Millisecond
 )
 
 func newStore() *circuit.Store {
 	return circuit.New(threshold, cooldown)
+}
+
+// openCircuit is a helper that trips the circuit breaker for the given service
+// by recording the configured number of failures.
+func openCircuit(s *circuit.Store, service string) {
+	for i := 0; i < threshold; i++ {
+		s.RecordFailure(service)
+	}
 }
 
 func TestAllow_InitiallyPermits(t *testing.T) {
@@ -33,9 +41,7 @@ func TestState_InitiallyClosed(t *testing.T) {
 
 func TestRecordFailure_OpensAfterThreshold(t *testing.T) {
 	s := newStore()
-	for i := 0; i < threshold; i++ {
-		s.RecordFailure(svc)
-	}
+	openCircuit(s, svc)
 	if got := s.State(svc); got != circuit.StateOpen {
 		t.Fatalf("expected open after %d failures, got %s", threshold, got)
 	}
@@ -60,9 +66,7 @@ func TestRecordSuccess_ResetsClosed(t *testing.T) {
 
 func TestHalfOpen_AfterCooldown(t *testing.T) {
 	s := newStore()
-	for i := 0; i < threshold; i++ {
-		s.RecordFailure(svc)
-	}
+	openCircuit(s, svc)
 	time.Sleep(cooldown + 10*time.Millisecond)
 	if !s.Allow(svc) {
 		t.Fatal("expected Allow=true in half-open state after cooldown")
@@ -74,9 +78,7 @@ func TestHalfOpen_AfterCooldown(t *testing.T) {
 
 func TestHalfOpen_SuccessCloses(t *testing.T) {
 	s := newStore()
-	for i := 0; i < threshold; i++ {
-		s.RecordFailure(svc)
-	}
+	openCircuit(s, svc)
 	time.Sleep(cooldown + 10*time.Millisecond)
 	s.Allow(svc) // transition to half-open
 	s.RecordSuccess(svc)
@@ -87,9 +89,7 @@ func TestHalfOpen_SuccessCloses(t *testing.T) {
 
 func TestIndependentServices(t *testing.T) {
 	s := newStore()
-	for i := 0; i < threshold; i++ {
-		s.RecordFailure("broken")
-	}
+	openCircuit(s, "broken")
 	if !s.Allow("healthy") {
 		t.Fatal("unrelated service should not be affected by another's failures")
 	}
