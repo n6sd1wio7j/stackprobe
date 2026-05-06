@@ -81,3 +81,18 @@ func TestEvaluate_FiredAtIsSet(t *testing.T) {
 		t.Error("expected FiredAt to be set on new alert")
 	}
 }
+
+func TestEvaluate_ResolvedAtAfterFiredAt(t *testing.T) {
+	m := New()
+	fired := m.Evaluate("svc-a", false)
+	if fired == nil {
+		t.Fatal("expected alert to be fired")
+	}
+	resolved := m.Evaluate("svc-a", true)
+	if resolved == nil {
+		t.Fatal("expected resolved alert")
+	}
+	if resolved.ResolvedAt.Before(resolved.FiredAt) {
+		t.Error("expected ResolvedAt to be after or equal to FiredAt")
+	}
+}
