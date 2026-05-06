@@ -70,3 +70,14 @@ func TestActive_EmptyWhenAllResolved(t *testing.T) {
 		t.Error("expected no active alerts after resolution")
 	}
 }
+
+func TestEvaluate_FiredAtIsSet(t *testing.T) {
+	m := New()
+	alert := m.Evaluate("svc-a", false)
+	if alert == nil {
+		t.Fatal("expected alert to be fired")
+	}
+	if alert.FiredAt.IsZero() {
+		t.Error("expected FiredAt to be set on new alert")
+	}
+}
