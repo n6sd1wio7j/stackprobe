@@ -84,3 +84,19 @@ func TestHandler_Get_SingleService(t *testing.T) {
 		t.Fatalf("expected 3, got %d", resp["weight"])
 	}
 }
+
+func TestHandler_Get_UnknownService_ReturnsDefault(t *testing.T) {
+	h, _ := newHandler(t)
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/weights/unknown", nil))
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", rr.Code)
+	}
+	var resp map[string]int
+	if err := json.NewDecoder(rr.Body).Decode(&resp); err != nil {
+		t.Fatalf("decode error: %v", err)
+	}
+	if resp["weight"] != 1 {
+		t.Fatalf("expected default weight 1, got %d", resp["weight"])
+	}
+}
