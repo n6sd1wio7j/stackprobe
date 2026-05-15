@@ -75,6 +75,18 @@ func TestAll_ReturnsSnapshot(t *testing.T) {
 	}
 }
 
+// TestAll_SnapshotIsolation verifies that mutations to the map returned by All
+// do not affect the underlying store.
+func TestAll_SnapshotIsolation(t *testing.T) {
+	s := New(Low)
+	_ = s.Set("svc", Medium)
+	all := s.All()
+	all["svc"] = Critical // mutate the snapshot
+	if got := s.Get("svc"); got != Medium {
+		t.Fatalf("expected Medium after snapshot mutation, got %v", got)
+	}
+}
+
 func TestFilter_MinLevel(t *testing.T) {
 	s := New(Low)
 	_ = s.Set("low-svc", Low)
