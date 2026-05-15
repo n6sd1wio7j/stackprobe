@@ -98,3 +98,18 @@ func TestAll_ReturnsAll(t *testing.T) {
 		t.Fatalf("expected 2 schedules")
 	}
 }
+
+func TestSet_OverwritesExistingEntry(t *testing.T) {
+	s := New()
+	_ = s.Set("api", "alice", "", "", futureTime(time.Hour))
+	if err := s.Set("api", "bob", "", "", futureTime(2*time.Hour)); err != nil {
+		t.Fatalf("unexpected error on overwrite: %v", err)
+	}
+	sc, ok := s.Get("api")
+	if !ok {
+		t.Fatal("expected schedule to exist after overwrite")
+	}
+	if sc.Owner != "bob" {
+		t.Errorf("expected bob after overwrite, got %s", sc.Owner)
+	}
+}
